@@ -16,6 +16,8 @@ set :port, 8090
 # These are still under construction.
 
 get '/api/v1/tweets/:user_id' do # Get tweets by :user_id
+  puts ENV["MONGOUSER"]
+  puts ENV["MONGOPASS"]
   #byebug
   tweets = Tweet.where(user_id: params[:id]).desc(:date_posted).limit(50).to_json
 end
