@@ -6,7 +6,7 @@ require 'byebug'
 require_relative 'models/tweet'
 
 # DB Setup
-Mongoid.load! "mongoid.config"
+Mongoid.load! "config/mongoid.yml"
 
 #set binding
 enable :sessions
@@ -18,6 +18,10 @@ set :port, 8090
 get '/api/v1/tweets/:user_id' do # Get tweets by :user_id
   #byebug
   tweets = Tweet.where(user_id: params[:id]).desc(:date_posted).limit(50).to_json
+end
+
+get '/api/v1/tweets/:tweet_id' do
+  Tweet.find_by(params[:tweet_id]).to_json
 end
 
 get '/api/v1/tweets/recent' do # Get 50 random tweets
