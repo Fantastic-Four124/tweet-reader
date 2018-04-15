@@ -105,7 +105,8 @@ get PREFIX + '/:token/users/:id/timeline' do
      tweets = []
      leader_list = $follow_redis.get("#{id} leaders").keys
      leader_list.each do |l|
-      l_tweets = Tweet.where(user_id: l).as_json
+      l_hash = JSON.parse($user_redis.get(l))
+      l_tweets = Tweet.where(user_id: l.to_i).to_json
         l_tweets.each do |t|
           t['user'] = l_hash
           t['createdAt'] = t.delete('created_at').to_f * 1000
