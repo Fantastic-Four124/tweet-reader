@@ -22,9 +22,9 @@ set :allow_headers, 'accept,content-type,if-modified-since'
 set :expose_headers, 'location,link'
 
 configure do
-  uri = URI.parse("redis-19695.c8.us-east-1-3.ec2.cloud.redislabs.com:19695")
+  uri = URI.parse(ENV["READER_REDIS_URL"])
   user_uri = URI.parse(ENV['USER_REDIS_URL'])
-  follow_uri = URI.parse('redis://rediscloud:eMSO1kcjbzvlmtlMqtWesW7qCjbAAhbx@redis-14823.c15.us-east-1-2.ec2.cloud.redislabs.com:14823')
+  follow_uri = URI.parse(ENV['FOLLOW_REDIS_URL'])
   $redis = Redis.new(:host => uri.host, :port => uri.port, :password => uri.password)
   $user_redis = Redis.new(:host => user_uri.host, :port => user_uri.port, :password => user_uri.password)
   $follow_redis = Redis.new(:host => follow_uri.host, :port => follow_uri.port, :password => follow_uri.password)
@@ -37,22 +37,7 @@ end
 
 
 get PREFIX + '/tweets/:username/username' do # Get tweets by :username
- #byebug
-  tweets = Tweet.where(username: params[:name]).desc(:date_posted).limit(50).to_json
- # Choo implementation
- # tweetJSON = Array.new
- # tweets.each do |tweet|
- #   tweetJSON <<  {
- #     contents: tweet.contents,
- #     createdAt: tweet.date_posted,
- #     id: tweet.id,
- #     user: {
- #       username: tweet.username,
- #       id: tweet.user_id
- #     }
- #   }
- # end
- # tweetJSON.to_json
+  tweets = Tweet.where('user.username' => params['username'].to_i).limit(50).to_json
 end
 
 get PREFIX + '/tweets/:tweet_id/tweet_id' do
@@ -60,41 +45,24 @@ get PREFIX + '/tweets/:tweet_id/tweet_id' do
 end
 
 get PREFIX + '/tweets/recent' do # Get 50 random tweets
-  tweets = Tweet.desc(:date_posted).limit(50)
-  tweetJSON = Array.new
-  tweets.each do |tweet|
-    tweetJSON <<  {
-      contents: tweet.contents,
-      createdAt: tweet.date_posted.to_f * 1000,
-      id: tweet.id,
-      user: {
-        username: tweet.username,
-        id: tweet.user_id
-      }
-    }
+  choo_tweets = Array.new
+  if !$redis.lrange("recent", 0, -1).nil?
+    $redis.lrange("recent", 0, -1).each do |tweet|
+      choo_tweets << JSON.parse(tweet)
+    end
+    return choo_tweets.to_json
+  else
+    tweets = Tweet.desc(:date_posted).limit(50).to_json
   end
-  tweetJSON.to_json
 end
 
 
 get PREFIX + '/:token/users/:id/feed' do
   session = $user_redis.get params['token']
   if session
-    user = JSON.parse session
-    tweets = Tweet.where(user_id: user['id']).desc(:date_posted).limit(50)
-    tweetJSON = Array.new
-    tweets.each do |tweet|
-      tweetJSON <<  {
-        contents: tweet.contents,
-        createdAt: tweet.date_posted.to_f * 1000,
-        id: tweet.id,
-        user: {
-          username: tweet.username,
-          id: tweet.user_id
-        }
-      }
-    end
-    return tweetJSON.to_json
+    #desc(:date_posted)
+    tweets = Tweet.where('user.id' => params['id'].to_i).limit(50)
+    return tweets.to_json
   end
   {err: true}.to_json
 end
@@ -103,19 +71,22 @@ get PREFIX + '/:token/users/:id/timeline' do
    session = $user_redis.get params['token']
    if session
      tweets = []
-     leader_list = $follow_redis.get("#{id} leaders").keys
-     leader_list.each do |l|
-      l_hash = JSON.parse($user_redis.get(l))
-      l_tweets = Tweet.where(user_id: l.to_i).to_json
-        l_tweets.each do |t|
-          t['user'] = l_hash
-          t['createdAt'] = t.delete('created_at').to_f * 1000
-        end
-        tweets.concat(l_tweets)
-      end
-      return tweets.sort! {|t1, t2| t2['createdAt'] <=> t1['createdAt']}.to_json
-    end
-    {err: true}.to_json
+     if !$follow_redis.get("#{params['id']} leaders").nil?
+       leader_list = JSON.parse($follow_redis.get("#{params['id']} leaders")).keys
+       leader_list.each do |l|
+         l_hash = JSON.parse($user_redis.get(l))
+         l_tweets = JSON.parse(Tweet.where('user.id' => l.to_i).desc(:date_posted).to_json)
+         l_tweets.each do |t|
+           t['user'] = l_hash
+         end
+         tweets.concat(l_tweets)
+       end
+       return tweets.to_json
+     else
+       return Array.new.to_json
+     end
+   end
+   {err: true}.to_json
 end
 
 get PREFIX + '/hashtags/:term' do
