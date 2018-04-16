@@ -43,10 +43,10 @@ end
 get PREFIX + '/tweets/:tweet_id/tweet_id' do
   Tweet.find_by(params[:tweet_id]).to_json
 end
-# 
+#
 get PREFIX + '/tweets/recent' do # Get 50 random tweets
   choo_tweets = Array.new
-  if !$redis.lrange("recent", 0, -1).nil?
+  if !$redis.lrange("recent", 0, -1).size <= 0
     $redis.lrange("recent", 0, -1).each do |tweet|
       choo_tweets << JSON.parse(tweet)
     end
