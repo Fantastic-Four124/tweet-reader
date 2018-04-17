@@ -22,10 +22,10 @@ set :allow_headers, 'accept,content-type,if-modified-since'
 set :expose_headers, 'location,link'
 
 configure do
-  uri = URI.parse(ENV["READER_REDIS_URL"])
+  tweet_uri = URI.parse(ENV["TWEET_REDIS_URL"])
   user_uri = URI.parse(ENV['USER_REDIS_URL'])
   follow_uri = URI.parse(ENV['FOLLOW_REDIS_URL'])
-  $redis = Redis.new(:host => uri.host, :port => uri.port, :password => uri.password)
+  $tweet_redis = Redis.new(:host => tweet_uri.host, :port => tweet_uri.port, :password => tweet_uri.password)
   $user_redis = Redis.new(:host => user_uri.host, :port => user_uri.port, :password => user_uri.password)
   $follow_redis = Redis.new(:host => follow_uri.host, :port => follow_uri.port, :password => follow_uri.password)
   PREFIX = '/api/v1'
@@ -46,13 +46,13 @@ end
 #
 get PREFIX + '/tweets/recent' do # Get 50 random tweets
   choo_tweets = Array.new
-  if $redis.llen("recent") > 0
-    $redis.lrange("recent", 0, -1).each do |tweet|
+  if $tweet_redis.llen("recent") > 0
+    $tweet_redis.lrange("recent", 0, -1).each do |tweet|
       choo_tweets << JSON.parse(tweet)
     end
     return choo_tweets.to_json
   else
-    tweets = Tweet.desc(:date_posted).limit(50).to_json
+    Tweet.desc(:date_posted).limit(50).to_json
   end
 end
 
