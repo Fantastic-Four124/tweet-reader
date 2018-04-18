@@ -25,6 +25,8 @@ configure do
   tweet_uri = URI.parse(ENV["TWEET_REDIS_URL"])
   user_uri = URI.parse(ENV['USER_REDIS_URL'])
   follow_uri = URI.parse(ENV['FOLLOW_REDIS_URL'])
+  tweet_uri_spare = URI.parse(ENV['TWEET_REDIS_SPARE_URL'])
+  $tweet_redis_spare = Redis.new(:host => tweet_uri_spare.host, :port => tweet_uri_spare.port, :password => tweet_uri_spare.password)
   $tweet_redis = Redis.new(:host => tweet_uri.host, :port => tweet_uri.port, :password => tweet_uri.password)
   $user_redis = Redis.new(:host => user_uri.host, :port => user_uri.port, :password => user_uri.password)
   $follow_redis = Redis.new(:host => follow_uri.host, :port => follow_uri.port, :password => follow_uri.password)
@@ -50,14 +52,18 @@ get PREFIX + '/tweets/:tweet_id/tweet_id' do
 end
 #
 get PREFIX + '/tweets/recent' do # Get 50 random tweets
-  choo_tweets = Array.new
+  #choo_tweets = Array.new
   if $tweet_redis.llen("recent") > 0
     # $tweet_redis.lrange("recent", 0, -1).each do |tweet|
     #   #choo_tweets << JSON.parse(tweet)
     #   choo_tweets << tweet
     # end
     # return choo_tweets.to_json
-    return $tweet_redis.lrange("recent", 0, -1).to_json
+    if rand(2) == 1
+      return $tweet_redis.lrange("recent", 0, -1).to_json
+    else
+      return $tweet_redis_spare.lrange("recent", 0, -1).to_json
+    end
   else
     Tweet.desc(:date_posted).limit(50).to_json
   end
