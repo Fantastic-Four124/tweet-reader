@@ -31,9 +31,13 @@ configure do
   PREFIX = '/api/v1'
 end
 
+get '/loaderio-16864484b2fbdbe95495f6268aad2f2b.txt' do
+  send_file 'loaderio-16864484b2fbdbe95495f6268aad2f2b.txt'
+end
+
 get '/loaderio-e30c4c1f459b4ac680a9e6cc226a3199.txt' do
   send_file 'loaderio-e30c4c1f459b4ac680a9e6cc226a3199.txt'
-end
+
 
 
 get PREFIX + '/tweets/:username/username' do # Get tweets by :username
