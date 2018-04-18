@@ -53,7 +53,8 @@ get PREFIX + '/tweets/recent' do # Get 50 random tweets
   choo_tweets = Array.new
   if $tweet_redis.llen("recent") > 0
     $tweet_redis.lrange("recent", 0, -1).each do |tweet|
-      choo_tweets << JSON.parse(tweet)
+      #choo_tweets << JSON.parse(tweet)
+      choo_tweets << tweet
     end
     return choo_tweets.to_json
   else
