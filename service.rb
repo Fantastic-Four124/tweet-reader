@@ -74,8 +74,16 @@ get PREFIX + '/:token/users/:id/feed' do
   session = $user_redis.get params['token']
   if session
     #desc(:date_posted)
-    tweets = Tweet.where('user.id' => params['id'].to_i).limit(50)
-    return tweets.to_json
+    if $tweet_redis.llen(params['id'].to_s + "_feed") > 0
+      if rand(2) == 1
+        return $tweet_redis.lrange(params['id'].to_s + "_feed", 0, -1).to_json
+      else
+        return $tweet_redis_spare.lrange(params['id'].to_s + "_feed", 0, -1).to_json
+      end
+    else
+      tweets = Tweet.where('user.id' => params['id'].to_i).desc(:date_posted).limit(50)
+      return tweets.to_json
+    end
   end
   {err: true}.to_json
 end
