@@ -23,7 +23,7 @@ set :allow_headers, 'accept,content-type,if-modified-since'
 set :expose_headers, 'location,link'
 
 configure do
-  $follow_service = "https://fierce-garden-41263.herokuapp.com/"
+  $follow_service = "https://fierce-garden-41263.herokuapp.com"
   tweet_uri = URI.parse(ENV["TWEET_REDIS_URL"])
   user_uri = URI.parse(ENV['USER_REDIS_URL'])
   follow_uri = URI.parse(ENV['FOLLOW_REDIS_URL'])
