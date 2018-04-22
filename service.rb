@@ -67,7 +67,7 @@ get PREFIX + '/tweets/recent' do # Get 50 random tweets
       return $tweet_redis_spare.lrange("recent", 0, -1).to_json
     end
   else
-    Tweet.desc(:date_posted).limit(50).each do |tweet|
+    Tweet.limit(50).desc(:date_posted).each do |tweet|
       $tweet_redis.lpush("recent", tweet.to_json)
       choo_tweets << JSON.parse(tweet.to_json)
     end
@@ -87,7 +87,7 @@ get PREFIX + '/:token/users/:id/feed' do
         return $tweet_redis_spare.lrange(params['id'].to_s + "_feed", 0, -1).to_json
       end
     else
-      tweets = Tweet.where('user.id' => params['id'].to_i).desc(:date_posted).limit(50)
+      tweets = Tweet.where('user.id' => params['id'].to_i).limit(50).desc(:date_posted)
       return tweets.to_json
     end
   end
@@ -117,10 +117,10 @@ get PREFIX + '/:token/users/:id/timeline' do
 end
 
 get PREFIX + '/hashtags/:term' do
-  Tweet.full_text_search(params[:label]).desc(:date_posted).limit(50).to_json
+  Tweet.full_text_search(params[:label]).limit(50).desc(:date_posted).to_json
 end
 
 get PREFIX + '/searches/:term' do
   # byebug
-  Tweet.full_text_search(params[:word]).desc(:date_posted).limit(50).to_json
+  Tweet.full_text_search(params[:word]).limit(50).desc(:date_posted)to_json
 end
