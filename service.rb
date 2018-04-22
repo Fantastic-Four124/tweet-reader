@@ -175,8 +175,9 @@ end
 def generate_potential_tweet_list(leader_list)
   leaders_tweet_list = []
   if leader_list != "[]".to_json
-  leader_list.each do |leader_id|
-    leaders_tweet_list << get_new_leader_feed(leader_id)
+    leader_list.each do |leader_id|
+      leaders_tweet_list << get_new_leader_feed(leader_id)
+    end
   end
   leaders_tweet_list
 end
