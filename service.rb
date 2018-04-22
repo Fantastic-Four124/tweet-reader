@@ -163,7 +163,7 @@ end
 
 def get_leader_list(user_id)
   leader_list = []
-  if $follow_redis.get("#{user_id} leaders").nil?
+  if !$follow_redis.get("#{user_id} leaders").nil?
     leader_list = JSON.parse($follow_redis.get("#{user_id} leaders")).keys
   else
     follow_list_link = follow_service + '/leaders/:user_id'
