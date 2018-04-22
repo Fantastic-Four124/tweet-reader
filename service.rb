@@ -167,13 +167,14 @@ def get_leader_list(user_id)
     leader_list = JSON.parse($follow_redis.get("#{user_id} leaders")).keys
   else
     follow_list_link = $follow_service + "/leaders/#{user_id}"
-    leader_list = RestClient.get(follow_list_link)
+    leader_list = JSON.parse(RestClient.get(follow_list_link))
   end
   leader_list
 end
 
 def generate_potential_tweet_list(leader_list)
   leaders_tweet_list = []
+  if leader_list != "[]".to_json
   leader_list.each do |leader_id|
     leaders_tweet_list << get_new_leader_feed(leader_id)
   end
