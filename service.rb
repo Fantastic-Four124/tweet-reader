@@ -69,12 +69,10 @@ get PREFIX + '/tweets/recent' do # Get 50 random tweets
       return $tweet_redis_spare.lrange("recent", 0, -1).to_json
     end
   else
-    Tweet.limit(50).desc(:date_posted).each do |tweet|
-      $tweet_redis.lpush("recent", tweet.to_json)
-      choo_tweets << JSON.parse(tweet.to_json)
-    end
+    choo_tweets = get_tweets_from_database(2,'recent')
+    return choo_tweets.to_json
   end
-  choo_tweets.to_json
+  {err: true}.to_json
 end
 
 
@@ -89,11 +87,28 @@ get PREFIX + '/:token/users/:id/feed' do
         return $tweet_redis_spare.lrange(params['id'].to_s + "_feed", 0, -1).to_json
       end
     else
-      tweets = Tweet.where('user.id' => params['id'].to_i).limit(50).desc(:date_posted)
-      return tweets.to_json
+      choo_tweets = get_tweets_from_database(1,params['id'])
+      return choo_tweets.to_json
     end
   end
   {err: true}.to_json
+end
+
+def get_tweets_from_database(flag,key_word)
+  choo_tweets = []
+  tweets = []
+  queue_name = flag == 1? key_word.to_s + "_feed" : "recent"
+  if flag == 1
+    tweets = Tweet.where('user.id' => key_word.to_i).desc(:date_posted).limit(50)
+  else
+    tweets = Tweet.desc(:date_posted).limit(50)
+  end
+  tweets.each do |tweet|
+    $tweet_redis.lpush(queue_name,tweet.to_json)
+    $tweet_redis_spare.lpush(queue_name,tweet.to_json)
+    choo_tweets << tweet.to_json
+  end
+  return choo_tweets
 end
 
 # get PREFIX + '/:token/users/:id/timeline' do
@@ -128,7 +143,8 @@ get PREFIX + '/:token/users/:id/timeline' do
         return $tweet_redis_spare.lrange(params['id'] + "_timeline", 0, -1).to_json
       end
     else
-      return get_timeline_manually(params['id'])
+      tweets = get_timeline_manually(params['id'])
+      return tweets.to_json
     end
   end
   {err: true}.to_json
@@ -200,7 +216,7 @@ def check_empty_list(leaders_tweet_list,i,empty_list_set)
 end
 
 def push_tweet_to_redis(tweets,leaders_tweet_list,user_id,temp_tweet,index)
-  tweets << temp_tweet
+  tweets << temp_tweet.to_json
   $tweet_redis.lpush(user_id + "_timeline",temp_tweet.to_json)
   $tweet_redis_spare.lpush(user_id + "_timeline",temp_tweet.to_json)
   leaders_tweet_list[index].shift if index >= 0
