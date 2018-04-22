@@ -23,7 +23,7 @@ set :allow_headers, 'accept,content-type,if-modified-since'
 set :expose_headers, 'location,link'
 
 configure do
-  follow_service = "https://fierce-garden-41263.herokuapp.com/"
+  $follow_service = "https://fierce-garden-41263.herokuapp.com/"
   tweet_uri = URI.parse(ENV["TWEET_REDIS_URL"])
   user_uri = URI.parse(ENV['USER_REDIS_URL'])
   follow_uri = URI.parse(ENV['FOLLOW_REDIS_URL'])
@@ -166,7 +166,7 @@ def get_leader_list(user_id)
   if !$follow_redis.get("#{user_id} leaders").nil?
     leader_list = JSON.parse($follow_redis.get("#{user_id} leaders")).keys
   else
-    follow_list_link = follow_service + '/leaders/:user_id'
+    follow_list_link = $follow_service + '/leaders/:user_id'
     leader_list = RestClient.get(follow_list_link,{params: {user_id: user_id}})
   end
   leader_list
