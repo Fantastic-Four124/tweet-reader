@@ -6,6 +6,7 @@ require 'json'
 require 'byebug'
 require 'sinatra/cors'
 require_relative 'models/tweet'
+require 'rest-client'
 require 'redis'
 
 # DB Setup
@@ -22,6 +23,7 @@ set :allow_headers, 'accept,content-type,if-modified-since'
 set :expose_headers, 'location,link'
 
 configure do
+  follow_service = "https://fierce-garden-41263.herokuapp.com/"
   tweet_uri = URI.parse(ENV["TWEET_REDIS_URL"])
   user_uri = URI.parse(ENV['USER_REDIS_URL'])
   follow_uri = URI.parse(ENV['FOLLOW_REDIS_URL'])
@@ -99,27 +101,116 @@ get PREFIX + '/:token/users/:id/feed' do
   {err: true}.to_json
 end
 
+# get PREFIX + '/:token/users/:id/timeline' do
+#    session = $user_redis.get params['token']
+#    if session
+#      tweets = []
+#      if !$follow_redis.get("#{params['id']} leaders").nil?
+#        leader_list = JSON.parse($follow_redis.get("#{params['id']} leaders")).keys
+#        leader_list.each do |l|
+#          l_hash = JSON.parse($user_redis.get(l))
+#          l_tweets = JSON.parse(Tweet.where('user.id' => l.to_i).desc(:date_posted).to_json)
+#          l_tweets.each do |t|
+#            t['user'] = l_hash
+#          end
+#          tweets.concat(l_tweets)
+#        end
+#        return tweets.to_json
+#      else
+#        return Array.new.to_json
+#      end
+#    end
+#    {err: true}.to_json
+# end
+
 get PREFIX + '/:token/users/:id/timeline' do
-   session = $user_redis.get params['token']
-   if session
-     tweets = []
-     if !$follow_redis.get("#{params['id']} leaders").nil?
-       leader_list = JSON.parse($follow_redis.get("#{params['id']} leaders")).keys
-       leader_list.each do |l|
-         l_hash = JSON.parse($user_redis.get(l))
-         l_tweets = JSON.parse(Tweet.where('user.id' => l.to_i).desc(:date_posted).to_json)
-         l_tweets.each do |t|
-           t['user'] = l_hash
-         end
-         tweets.concat(l_tweets)
-       end
-       return tweets.to_json
-     else
-       return Array.new.to_json
-     end
-   end
-   {err: true}.to_json
+  session = $user_redis.get params['token']
+  if session
+    if $tweet_redis.llen(params['id'] + "_timeline") > 0
+      if rand(2) == 1
+        return $tweet_redis.lrange(params['id'] + "_timeline", 0, -1).to_json
+      else
+        return $tweet_redis_spare.lrange(params['id'] + "_timeline", 0, -1).to_json
+      end
+    else
+      return get_timeline_manually(params['id'])
+    end
+  end
+  {err: true}.to_json
 end
+
+def get_timeline_manually(user_id)
+  leader_list = get_leader_list(user_id)
+  leaders_tweet_list = generate_potential_tweet_list(leader_list)
+  assemble_timeline(leaders_tweet_list)
+end
+
+def get_leader_list(user_id)
+  leader_list = []
+  if $follow_redis.get("#{user_id} leaders").nil?
+    leader_list = JSON.parse($follow_redis.get("#{user_id} leaders")).keys
+  else
+    follow_list_link = follow_service + '/leaders/:user_id'
+    leader_list = RestClient.get(follow_list_link,{params: {user_id: user_id}})
+  end
+  leader_list
+end
+
+def generate_potential_tweet_list(leader_list)
+  leaders_tweet_list = []
+  leader_list.each do |leader_id|
+    leaders_tweet_list << get_new_leader_feed(leader_id)
+  end
+  leaders_tweet_list
+end
+
+def get_new_leader_feed(leader_id)
+  new_leader_feed = []
+  if $tweet_redis.llen(leader_id+ "_feed") > 0
+      $tweet_redis.lrange(leader_id+ "_feed", 0, -1).each do |tweet|
+        new_leader_feed << JSON.parse(tweet)
+      end
+  else
+    new_leader_feed  = Tweet.where('user.id' => leader_id).desc(:date_posted).limit(50)
+  end
+  new_leader_feed
+end
+
+def assemble_timeline (leaders_tweet_list)
+    tweets = []
+    count = 0
+    empty_list_set = Set.new
+
+    while (count < 50 && empty_list_set.size < leaders_tweet_list.size)
+      temp_tweet = nil
+      index = -1
+      for i in 0..leaders_list.size - 1 do
+        next if check_empty_list(leaders_tweet_list,i,empty_list_set)
+        if (temp_tweet.nil? || leaders_tweet_list[i][0][:date_posted] > temp_tweet[:date_posted])
+          temp_tweet = leaders_tweet_list[i][0]
+          index = i
+        end
+      end
+      push_tweet_to_redis(tweets,leaders_tweet_list,user_id,temp_tweet,index) if !temp_tweet.nil?
+    end
+    tweets
+  end
+
+def check_empty_list(leaders_tweet_list,i,empty_list_set)
+  if leaders_tweet_list[i].empty?
+    empty_list_set.add(i)
+    return true
+  end
+  return false
+end
+
+def push_tweet_to_redis(tweets,leaders_tweet_list,user_id,temp_tweet,index)
+  tweets << temp_tweet
+  $tweet_redis.lpush(user_id + "_timeline",temp_tweet.to_json)
+  $tweet_redis_spare.lpush(user_id + "_timeline",temp_tweet.to_json)
+  leaders_tweet_list[index].shift if index >= 0
+end
+
 
 get PREFIX + '/hashtags/:term' do
   Tweet.full_text_search(params[:label]).desc(:date_posted).limit(50).to_json
