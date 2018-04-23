@@ -23,7 +23,7 @@ set :allow_headers, 'accept,content-type,if-modified-since'
 set :expose_headers, 'location,link'
 
 configure do
-  follow_service = "https://fierce-garden-41263.herokuapp.com/"
+  $follow_service = "https://fierce-garden-41263.herokuapp.com"
   tweet_uri = URI.parse(ENV["TWEET_REDIS_URL"])
   user_uri = URI.parse(ENV['USER_REDIS_URL'])
   follow_uri = URI.parse(ENV['FOLLOW_REDIS_URL'])
@@ -153,24 +153,26 @@ end
 def get_timeline_manually(user_id)
   leader_list = get_leader_list(user_id)
   leaders_tweet_list = generate_potential_tweet_list(leader_list)
-  assemble_timeline(leaders_tweet_list)
+  assemble_timeline(leaders_tweet_list,user_id)
 end
 
 def get_leader_list(user_id)
   leader_list = []
-  if $follow_redis.get("#{user_id} leaders").nil?
+  if !$follow_redis.get("#{user_id} leaders").nil?
     leader_list = JSON.parse($follow_redis.get("#{user_id} leaders")).keys
   else
-    follow_list_link = follow_service + '/leaders/:user_id'
-    leader_list = RestClient.get(follow_list_link,{params: {user_id: user_id}})
+    follow_list_link = $follow_service + "/leaders/#{user_id}"
+    leader_list = JSON.parse(RestClient.get(follow_list_link))
   end
   leader_list
 end
 
 def generate_potential_tweet_list(leader_list)
   leaders_tweet_list = []
-  leader_list.each do |leader_id|
-    leaders_tweet_list << get_new_leader_feed(leader_id)
+  if leader_list != "[]".to_json
+    leader_list.each do |leader_id|
+      leaders_tweet_list << get_new_leader_feed(leader_id)
+    end
   end
   leaders_tweet_list
 end
@@ -187,7 +189,7 @@ def get_new_leader_feed(leader_id)
   new_leader_feed
 end
 
-def assemble_timeline (leaders_tweet_list)
+def assemble_timeline (leaders_tweet_list,user_id)
     tweets = []
     count = 0
     empty_list_set = Set.new
@@ -195,7 +197,7 @@ def assemble_timeline (leaders_tweet_list)
     while (count < 50 && empty_list_set.size < leaders_tweet_list.size)
       temp_tweet = nil
       index = -1
-      for i in 0..leaders_list.size - 1 do
+      for i in 0..leaders_tweet_list.size - 1 do
         next if check_empty_list(leaders_tweet_list,i,empty_list_set)
         if (temp_tweet.nil? || leaders_tweet_list[i][0][:date_posted] > temp_tweet[:date_posted])
           temp_tweet = leaders_tweet_list[i][0]
