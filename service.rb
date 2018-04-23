@@ -158,7 +158,7 @@ end
 def get_timeline_manually(user_id)
   leader_list = get_leader_list(user_id)
   leaders_tweet_list = generate_potential_tweet_list(leader_list)
-  assemble_timeline(leaders_tweet_list)
+  assemble_timeline(leaders_tweet_list,user_id)
 end
 
 def get_leader_list(user_id)
@@ -194,7 +194,7 @@ def get_new_leader_feed(leader_id)
   new_leader_feed
 end
 
-def assemble_timeline (leaders_tweet_list)
+def assemble_timeline (leaders_tweet_list,user_id)
     tweets = []
     count = 0
     empty_list_set = Set.new
