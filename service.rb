@@ -210,5 +210,5 @@ end
 
 get PREFIX + '/searches/:term' do
   # byebug
-  Tweet.full_text_search(params[:word]).limit(50).desc(:date_posted).to_json
+  Tweet.where({"$text" => {"$search" => params[:term]}}).to_json
 end
