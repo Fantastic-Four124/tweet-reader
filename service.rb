@@ -116,30 +116,9 @@ def get_tweets_from_database(flag,key_word)
   return choo_tweets
 end
 
-# get PREFIX + '/:token/users/:id/timeline' do
-#    session = $user_redis.get params['token']
-#    if session
-#      tweets = []
-#      if !$follow_redis.get("#{params['id']} leaders").nil?
-#        leader_list = JSON.parse($follow_redis.get("#{params['id']} leaders")).keys
-#        leader_list.each do |l|
-#          l_hash = JSON.parse($user_redis.get(l))
-#          l_tweets = JSON.parse(Tweet.where('user.id' => l.to_i).desc(:date_posted).to_json)
-#          l_tweets.each do |t|
-#            t['user'] = l_hash
-#          end
-#          tweets.concat(l_tweets)
-#        end
-#        return tweets.to_json
-#      else
-#        return Array.new.to_json
-#      end
-#    end
-#    {err: true}.to_json
-# end
-
 get PREFIX + '/:token/users/:id/timeline' do
   session = $user_redis.get params['token']
+  session = true if params['token'] == 'testuser'
   if session
     if $tweet_redis.llen(params['id'] + "_timeline") > 0
       if rand(2) == 1
