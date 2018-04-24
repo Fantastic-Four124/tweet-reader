@@ -75,6 +75,10 @@ get PREFIX + '/tweets/recent' do # Get 50 random tweets
     end
   else
     choo_tweets = get_tweets_from_database(2,'recent')
+    choo_tweets.each do |tweet|
+      $tweet_redis.lpush("recent", tweet.to_json)
+      $tweet_redis_spare.lpush("recent", tweet.to_json)
+    end
     return choo_tweets.to_json
   end
   {err: true}.to_json
@@ -93,6 +97,10 @@ get PREFIX + '/:token/users/:id/feed' do
       end
     else
       choo_tweets = get_tweets_from_database(1,params['id'])
+      choo_tweets.each do |tweet|
+        $tweet_redis.lpush(params['id'].to_s + "_feed", tweet.to_json)
+        $tweet_redis_spare.lpush(params['id'].to_s + "_feed", tweet.to_json)
+      end
       return choo_tweets.to_json
     end
   end
