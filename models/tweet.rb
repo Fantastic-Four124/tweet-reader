@@ -1,7 +1,6 @@
 class Tweet
   include Mongoid::Document
   include Mongoid::Timestamps
-  include Mongoid::Search
 
   field :contents, type: String
   field :date_posted, type: DateTime
@@ -11,6 +10,6 @@ class Tweet
 
   attr_readonly :user, :contents
   validates :user, presence: true
-  search_in :contents, :hashtags
+  index({contents: "text"})
   store_in collection: 'nt-tweets'
 end
