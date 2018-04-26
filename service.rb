@@ -28,8 +28,10 @@ configure do
   user_uri = URI.parse(ENV['USER_REDIS_URL'])
   follow_uri = URI.parse(ENV['FOLLOW_REDIS_URL'])
   tweet_uri_spare = URI.parse(ENV['TWEET_REDIS_SPARE_URL'])
+  tweet_uri_3 = URI.parse(ENV['TWEET_REDIS_3'])
   $tweet_redis_spare = Redis.new(:host => tweet_uri_spare.host, :port => tweet_uri_spare.port, :password => tweet_uri_spare.password)
   $tweet_redis = Redis.new(:host => tweet_uri.host, :port => tweet_uri.port, :password => tweet_uri.password)
+  $tweet_redis_3 = Redis.new(:host => tweet_uri_3.host, :port => tweet_uri_3.port, :password => tweet_uri_3.password)
   $user_redis = Redis.new(:host => user_uri.host, :port => user_uri.port, :password => user_uri.password)
   $follow_redis = Redis.new(:host => follow_uri.host, :port => follow_uri.port, :password => follow_uri.password)
   PREFIX = '/api/v1'
@@ -45,6 +47,8 @@ helpers do
     else
       Tweet.desc(:date_posted).limit(50).each do |tweet|
         $tweet_redis.lpush("recent", tweet.to_json)
+        $tweet_redis_spare.lpush("recent", tweet.to_json)
+        $tweet_redis_3.lpush("recent", tweet.to_json)
         choo_tweets << JSON.parse(tweet.to_json)
       end
     end
@@ -82,6 +86,7 @@ get PREFIX + '/tweets/recent' do # Get 50 random tweets
     choo_tweets.each do |tweet|
       $tweet_redis.lpush("recent", tweet.to_json)
       $tweet_redis_spare.lpush("recent", tweet.to_json)
+      $tweet_redis_3.lpush("recent", tweet.to_json)
     end
     return choo_tweets.to_json
   end
@@ -105,6 +110,7 @@ get PREFIX + '/:token/users/:id/feed' do
       choo_tweets.each do |tweet|
         $tweet_redis.lpush(params['id'].to_s + "_feed", tweet.to_json)
         $tweet_redis_spare.lpush(params['id'].to_s + "_feed", tweet.to_json)
+        $tweet_redis_3.lpush(params['id'].to_s + "_feed", tweet.to_json)
       end
       return choo_tweets.to_json
     end
@@ -124,6 +130,7 @@ def get_tweets_from_database(flag,key_word)
   tweets.each do |tweet|
     $tweet_redis.lpush(queue_name,tweet.to_json)
     $tweet_redis_spare.lpush(queue_name,tweet.to_json)
+    $tweet_redis_3.lpush(queue_name,tweet.to_json)
     choo_tweets << tweet.to_json
   end
   return choo_tweets
@@ -218,6 +225,7 @@ def push_tweet_to_redis(tweets,leaders_tweet_list,user_id,temp_tweet,index)
   tweets << temp_tweet.to_json
   $tweet_redis.lpush(user_id + "_timeline",temp_tweet.to_json)
   $tweet_redis_spare.lpush(user_id + "_timeline",temp_tweet.to_json)
+  $tweet_redis_3.lpush(user_id + "_timeline",temp_tweet.to_json)
   leaders_tweet_list[index].shift if index >= 0
 end
 
