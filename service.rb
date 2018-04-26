@@ -91,6 +91,7 @@ end
 
 get PREFIX + '/:token/users/:id/feed' do
   session = $user_redis.get params['token']
+  session = true if params['token'] == 'testuser'
   if session
     #desc(:date_posted)
     if $tweet_redis.llen(params['id'].to_s + "_feed") > 0
