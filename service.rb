@@ -226,7 +226,9 @@ end
 
 
 get PREFIX + '/hashtags/:term' do
-  Tweet.full_text_search(params[:label]).limit(50).desc(:date_posted).to_json
+  #Tweet.full_text_search(params[:label]).limit(50).desc(:date_posted).to_json
+  # swtich to where search
+  Tweet.where({"$text" => {"$search" => params[:term]}}).to_json
 end
 
 get PREFIX + '/searches/:term' do
