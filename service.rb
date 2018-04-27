@@ -42,14 +42,14 @@ helpers do
     choo_tweets = Array.new
     if $tweet_redis.llen("recent") > 0
       $tweet_redis.lrange("recent", 0, -1).each do |tweet|
-        choo_tweets << tweet #JSON.parse(tweet)
+        choo_tweets << JSON.parse(tweet)
       end
     else
       Tweet.desc(:date_posted).limit(50).each do |tweet|
-        $tweet_redis.lpush("recent", tweet.as_json)
-        $tweet_redis_spare.lpush("recent", tweet.as_json)
-        $tweet_redis_3.lpush("recent", tweet.as_json)
-        choo_tweets << JSON.parse(tweet.as_json)
+        $tweet_redis.lpush("recent", tweet.to_json)
+        $tweet_redis_spare.lpush("recent", tweet.to_json)
+        $tweet_redis_3.lpush("recent", tweet.to_json)
+        choo_tweets << JSON.parse(tweet.to_json)
       end
     end
     choo_tweets.to_json
@@ -65,7 +65,7 @@ get '/loaderio-16864484b2fbdbe95495f6268aad2f2b.txt' do
 end
 
 get PREFIX + '/tweets/:tweet_id/tweet_id' do
-  Tweet.find_by(params[:tweet_id]).as_json
+  Tweet.find_by(params[:tweet_id]).to_json
 end
 
 get PREFIX + '/tweets/recent' do # Get 50 random tweets
@@ -123,10 +123,10 @@ def get_tweets_from_database(flag,key_word)
     tweets = Tweet.desc(:date_posted).limit(50)
   end
   tweets.each do |tweet|
-    $tweet_redis.lpush(queue_name,tweet.as_json)
-    $tweet_redis_spare.lpush(queue_name,tweet.as_json)
-    $tweet_redis_3.lpush(queue_name,tweet.as_json)
-    choo_tweets << tweet.as_json
+    $tweet_redis.lpush(queue_name,tweet.to_json)
+    $tweet_redis_spare.lpush(queue_name,tweet.to_json)
+    $tweet_redis_3.lpush(queue_name,tweet.to_json)
+    choo_tweets << tweet.to_json
   end
   return choo_tweets
 end
@@ -217,10 +217,10 @@ def check_empty_list(leaders_tweet_list,i,empty_list_set)
 end
 
 def push_tweet_to_redis(tweets,leaders_tweet_list,user_id,temp_tweet,index)
-  tweets << temp_tweet.as_json
-  $tweet_redis.lpush(user_id + "_timeline",temp_tweet.as_json)
-  $tweet_redis_spare.lpush(user_id + "_timeline",temp_tweet.as_json)
-  $tweet_redis_3.lpush(user_id + "_timeline",temp_tweet.as_json)
+  tweets << temp_tweet.to_json
+  $tweet_redis.lpush(user_id + "_timeline",temp_tweet.to_json)
+  $tweet_redis_spare.lpush(user_id + "_timeline",temp_tweet.to_json)
+  $tweet_redis_3.lpush(user_id + "_timeline",temp_tweet.to_json)
   leaders_tweet_list[index].shift if index >= 0
 end
 
@@ -228,10 +228,10 @@ end
 get PREFIX + '/hashtags/:term' do
   #Tweet.full_text_search(params[:label]).limit(50).desc(:date_posted).to_json
   # swtich to where search
-  Tweet.where({"$text" => {"$search" => params[:term]}}).as_json
+  Tweet.where({"$text" => {"$search" => params[:term]}}).to_json
 end
 
 get PREFIX + '/searches/:term' do
   # byebug
-  Tweet.where({"$text" => {"$search" => params[:term]}}).as_json
+  Tweet.where({"$text" => {"$search" => params[:term]}}).to_json
 end
