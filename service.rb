@@ -69,13 +69,8 @@ get PREFIX + '/tweets/:tweet_id/tweet_id' do
 end
 
 get PREFIX + '/tweets/recent' do # Get 50 random tweets
-  #choo_tweets = Array.new
+  choo_tweets = Array.new
   if $tweet_redis.llen("recent") > 0
-    # $tweet_redis.lrange("recent", 0, -1).each do |tweet|
-    #   #choo_tweets << JSON.parse(tweet)
-    #   choo_tweets << tweet
-    # end
-    # return choo_tweets.to_json
     if rand(2) == 1
       return $tweet_redis.lrange("recent", 0, -1).to_json
     else
@@ -231,10 +226,10 @@ end
 
 
 get PREFIX + '/hashtags/:term' do
-  Tweet.full_text_search(params[:label]).desc(:date_posted).limit(50).to_json
+  Tweet.full_text_search(params[:label]).limit(50).desc(:date_posted).to_json
 end
 
 get PREFIX + '/searches/:term' do
   # byebug
-  Tweet.full_text_search(params[:word]).desc(:date_posted).limit(50).to_json
+  Tweet.where({"$text" => {"$search" => params[:term]}}).to_json
 end
