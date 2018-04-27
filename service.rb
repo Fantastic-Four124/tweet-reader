@@ -42,7 +42,7 @@ helpers do
     choo_tweets = Array.new
     if $tweet_redis.llen("recent") > 0
       $tweet_redis.lrange("recent", 0, -1).each do |tweet|
-        choo_tweets << JSON.parse(tweet)
+        choo_tweets << tweet #JSON.parse(tweet)
       end
     else
       Tweet.desc(:date_posted).limit(50).each do |tweet|
@@ -126,7 +126,7 @@ def get_tweets_from_database(flag,key_word)
     $tweet_redis.lpush(queue_name,tweet.to_json)
     $tweet_redis_spare.lpush(queue_name,tweet.to_json)
     $tweet_redis_3.lpush(queue_name,tweet.to_json)
-    choo_tweets << tweet.to_json
+    choo_tweets << tweet.as_json
   end
   return choo_tweets
 end
@@ -217,10 +217,10 @@ def check_empty_list(leaders_tweet_list,i,empty_list_set)
 end
 
 def push_tweet_to_redis(tweets,leaders_tweet_list,user_id,temp_tweet,index)
-  tweets << temp_tweet.to_json
-  $tweet_redis.lpush(user_id + "_timeline",temp_tweet.to_json)
-  $tweet_redis_spare.lpush(user_id + "_timeline",temp_tweet.to_json)
-  $tweet_redis_3.lpush(user_id + "_timeline",temp_tweet.to_json)
+  tweets << temp_tweet.as_json
+  $tweet_redis.lpush(user_id + "_timeline",temp_tweet.as_json)
+  $tweet_redis_spare.lpush(user_id + "_timeline",temp_tweet.as_json)
+  $tweet_redis_3.lpush(user_id + "_timeline",temp_tweet.as_json)
   leaders_tweet_list[index].shift if index >= 0
 end
 
