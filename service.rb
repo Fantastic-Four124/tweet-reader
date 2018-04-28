@@ -88,7 +88,7 @@ get PREFIX + '/:token/users/:id/tweets' do
   session = $user_redis.get params['token']
   session = true if params['token'] == 'testuser'
   if session
-    get PREFIX + "/#{params['token']}/users/#{params['id']}/feed"
+    RestClient.get PREFIX + "/#{params['token']}/users/#{params['id']}/feed"
   end
   {err: true}.to_json
 end
@@ -96,7 +96,7 @@ end
 get PREFIX + '/:token/tweets/recent' do
   user_info = $user_redis.get params['token']
   if user_info
-    get PREFIX + "/#{params['token']}/users/#{user_info['id']}/feed"
+    RestClient.get PREFIX + "/#{params['token']}/users/#{user_info['id']}/feed"
   end
   {err: true}.to_json
 end
