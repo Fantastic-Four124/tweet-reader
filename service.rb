@@ -97,7 +97,7 @@ end
 get PREFIX + '/:token/tweets/recent' do
   user_info = $user_redis.get params['token']
   if user_info
-    RestClient.get $tweet_servicePREFIX + PREFIX + "/#{params['token']}/users/#{user_info['id']}/feed"
+    RestClient.get $tweet_service + PREFIX + "/#{params['token']}/users/#{user_info['id']}/feed"
   end
   {err: true}.to_json
 end
