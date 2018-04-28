@@ -85,7 +85,12 @@ get PREFIX + '/tweets/recent' do # Get 50 random tweets
 end
 
 get PREFIX + '/:token/users/:id/tweets' do
-  get PREFIX + "/#{params['token']}/users/#{params['id']}/feed"
+  session = $user_redis.get params['token']
+  session = true if params['token'] == 'testuser'
+  if session
+    get PREFIX + "/#{params['token']}/users/#{params['id']}/feed"
+  end
+  {err: true}.to_json
 end
 
 get PREFIX + '/:token/tweets/recent' do
@@ -156,8 +161,13 @@ get PREFIX + '/:token/users/:id/timeline' do
   {err: true}.to_json
 end
 
-get PREFIX + '/tweets/:tweet_id' do
-  Tweet.find_by(params[:tweet_id]).to_json
+get PREFIX + '/:token/tweets/:tweet_id' do
+  session = $user_redis.get params['token']
+  session = true if params['token'] == 'testuser'
+  if session
+    Tweet.find_by(params[:tweet_id]).to_json
+  end
+  {err: true}.to_json
 end
 
 def get_timeline_manually(user_id)
