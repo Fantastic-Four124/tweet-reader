@@ -64,7 +64,7 @@ get '/loaderio-16864484b2fbdbe95495f6268aad2f2b.txt' do
   send_file 'loaderio-16864484b2fbdbe95495f6268aad2f2b.txt'
 end
 
-get PREFIX + '/tweets/:tweet_id/tweet_id' do
+get PREFIX + '/tweets/:tweet_id' do
   Tweet.find_by(params[:tweet_id]).to_json
 end
 
@@ -88,6 +88,17 @@ get PREFIX + '/tweets/recent' do # Get 50 random tweets
   {err: true}.to_json
 end
 
+get PREFIX + '/:token/users/:id/tweets' do
+  get PREFIX + "/#{params['token']}/users/#{params['id']}/feed"
+end
+
+get PREFIX + '/:token/tweets/recent' do
+  user_info = $user_redis.get params['token']
+  if user_info
+    get PREFIX + "/#{params['token']}/users/#{user_info['id']}/feed"
+  end
+  {err: true}.to_json
+end
 
 get PREFIX + '/:token/users/:id/feed' do
   session = $user_redis.get params['token']
