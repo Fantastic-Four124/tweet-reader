@@ -23,6 +23,7 @@ set :allow_headers, 'accept,content-type,if-modified-since'
 set :expose_headers, 'location,link'
 
 configure do
+  $tweet_service = "https://nt-tweet-reader.herokuapp.com"
   $follow_service = "https://fierce-garden-41263.herokuapp.com"
   tweet_uri = URI.parse(ENV["TWEET_REDIS_URL"])
   user_uri = URI.parse(ENV['USER_REDIS_URL'])
@@ -88,7 +89,7 @@ get PREFIX + '/:token/users/:id/tweets' do
   session = $user_redis.get params['token']
   session = true if params['token'] == 'testuser'
   if session
-    RestClient.get PREFIX + "/#{params['token']}/users/#{params['id']}/feed"
+     RestClient.get $tweet_servicePREFIX + "/#{params['token']}/users/#{params['id']}/feed"
   end
   {err: true}.to_json
 end
@@ -96,7 +97,7 @@ end
 get PREFIX + '/:token/tweets/recent' do
   user_info = $user_redis.get params['token']
   if user_info
-    RestClient.get PREFIX + "/#{params['token']}/users/#{user_info['id']}/feed"
+    RestClient.get $tweet_servicePREFIX + PREFIX + "/#{params['token']}/users/#{user_info['id']}/feed"
   end
   {err: true}.to_json
 end
