@@ -168,7 +168,7 @@ get PREFIX + '/:token/tweets/:tweet_id' do
   session = $user_redis.get params['token']
   session = true if params['token'] == 'testuser'
   if session
-    Tweet.find_by(params[:tweet_id]).to_json
+    return Tweet.find_by(params[:tweet_id]).to_json
   end
   {err: true}.to_json
 end
