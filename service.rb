@@ -86,6 +86,7 @@ get PREFIX + '/tweets/recent' do # Get 50 random tweets
 end
 
 get PREFIX + '/:token/users/:id/tweets' do
+  puts params
   session = $user_redis.get params['token']
   session = true if params['token'] == 'testuser'
   if session
