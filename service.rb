@@ -64,10 +64,6 @@ get '/loaderio-16864484b2fbdbe95495f6268aad2f2b.txt' do
   send_file 'loaderio-16864484b2fbdbe95495f6268aad2f2b.txt'
 end
 
-get PREFIX + '/tweets/:tweet_id' do
-  Tweet.find_by(params[:tweet_id]).to_json
-end
-
 get PREFIX + '/tweets/recent' do # Get 50 random tweets
   choo_tweets = Array.new
   if $tweet_redis.llen("recent") > 0
@@ -158,6 +154,10 @@ get PREFIX + '/:token/users/:id/timeline' do
     end
   end
   {err: true}.to_json
+end
+
+get PREFIX + '/tweets/:tweet_id' do
+  Tweet.find_by(params[:tweet_id]).to_json
 end
 
 def get_timeline_manually(user_id)
